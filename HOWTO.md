@@ -87,6 +87,41 @@ round-trip min/avg/max = 4.585/11.364/19.839 ms
 
 `$ udhcpc -i eth0`
 
+**Configure/Use Ethernet over USB (PPP over USB ACM, OrangeCrab):**
+
+This uses the OrangeCrab USB serial link as a point-to-point network tunnel.
+
+1. Check that PPP support is enabled in the kernel:
+```
+$ zcat /proc/config.gz | grep -E 'CONFIG_PPP=|CONFIG_PPP_ASYNC='
+```
+
+2. On the SoC (Linux target), start PPP on the LiteX UART TTY (for example `/dev/ttyLXU0`):
+```
+$ pppd /dev/ttyLXU0 115200 local noauth nodetach 192.168.100.2:192.168.100.1
+```
+
+3. On the host PC, use the USB ACM port exposed by the board (for example `/dev/ttyACM0`):
+```
+$ sudo pppd /dev/ttyACM0 115200 local noauth nodetach 192.168.100.1:192.168.100.2
+```
+
+4. Verify `ppp0` exists on both sides and test connectivity:
+```
+$ ifconfig ppp0
+$ ping 192.168.100.1   # from SoC
+$ ping 192.168.100.2   # from host
+```
+
+Notes:
+- Replace `115200` with your selected UART baudrate if different.
+- On the SoC, the serial device is usually `ttyLXU0` (not `ttyACM0`).
+- If PPP is built as modules instead of built-in, load:
+```
+$ modprobe ppp_generic
+$ modprobe ppp_async
+```
+
 **Configure/Use the SPI Flash:**
 
 There should be a `/dev/mtd0` that you can read from/write to directly from bash, i.e.,:
